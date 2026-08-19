@@ -1,0 +1,22 @@
+*{
+    box-sizing: border-box;
+}
+
+body{
+    margin: 0;
+    background-color: #FF922b;
+    font-family: 'Times New Roman', Times, serif;
+}
+.produtos{
+    display: flex;
+    gap: 75px;
+    width: 90%;
+    max-width: 1400px;
+    margin: 70px auto;
+}
+.imagem_p{
+    width: 40%;
+    height: 600px;
+    background-color: #d3d3d3;
+}
+.imagem_p img{}
