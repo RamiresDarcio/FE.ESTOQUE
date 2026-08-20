@@ -9,6 +9,9 @@ body{
 }
 .produtos{
     display: flex;
+}
+.produtos{
+    display: flex;
     gap: 75px;
     width: 90%;
     max-width: 1400px;
@@ -19,4 +22,41 @@ body{
     height: 600px;
     background-color: #d3d3d3;
 }
-.imagem_p img{}
+.imagem_p img{
+    width: 100%;
+    height: 100%;
+
+    object-fit: contain;
+}
+.informacoes-p{
+    width: 60%;
+    height: 600px;
+    background-color: #d3d3d3;
+    padding: 50px 80px;
+    position: relative;
+}
+.nome_t{
+    margin-top: 22px;
+    margin: 25px 0;
+}
+.resumo{
+    margin-top: 50px !important;
+}
+
+.botao button {
+    width: 150px;
+    height: 45px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.editar {
+    background-color: white;
+}
+
+.excluir {
+    background-color: #d00000;
+    color: white;
+}
