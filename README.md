@@ -111,15 +111,21 @@ Banco de dados
 
 ## ▶️ Executar localmente
 
-1. Inicie a API:
+1. Inicie a API pelo PowerShell:
 
 	```powershell
-	dotnet run --project .\FeEstoque.Api\FeEstoque.Api.csproj --launch-profile http
+	.\iniciar-api.ps1
 	```
 
-2. Abra `fe.livro/html/idex.html` em um servidor estático local. No VS Code, a extensão Live Server é uma opção simples.
+	Ou execute diretamente: `dotnet run --project .\FeEstoque.Api\FeEstoque.Api.csproj --launch-profile http`
 
-3. Use `admin` / `admin123` no primeiro acesso. O SQLite é criado automaticamente em `FeEstoque.Api/feestoque.db`.
+2. Com a API em execução, abra `fe.livro/html/idex.html`. Live Server ou a abertura direta no navegador são aceitos no desenvolvimento.
+
+3. Use um dos perfis iniciais:
+	- Administrador: `admin` / `admin123`
+	- Gerente de estoque: `gerente` / `gerente123`
+
+	O SQLite é criado automaticamente em `FeEstoque.Api/feestoque.db`.
 
 A API fica disponível em `http://localhost:5050`. Os endpoints protegidos exigem o token JWT retornado pelo login.
 

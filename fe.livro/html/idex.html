@@ -1,2 +1,98 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FE.ESTOQUE | Login</title><link rel="stylesheet" href="../css/app.css"></head><body><main class="login-page" data-login-view><section class="login-box"><span class="eyebrow">Biblioteca de gestão</span><h1>FE.ESTOQUE</h1><p class="muted">Entre para organizar seu acervo e acompanhar o estoque.</p><div class="message" data-message></div><form data-login-form><div class="field"><label for="login">Login</label><input id="login" name="login" required autocomplete="username"></div><div class="field"><label for="senha">Senha</label><input id="senha" name="senha" type="password" required autocomplete="current-password"></div><button class="button primary" type="submit">Entrar</button></form><p class="hint">Acesso de desenvolvimento: admin / admin123</p></section></main><div class="shell dashboard-view" data-dashboard-view><header class="topbar"><a class="brand" href="idex.html?dashboard=1">FE.ESTOQUE</a><nav class="nav"><a class="active" href="idex.html?dashboard=1">Dashboard</a><a href="pesquisar.html">Livros</a><a href="gerenciar_de_produto.html">Novo livro</a><button class="logout" data-logout>Sair</button></nav></header><main><div class="hero"><div><span class="eyebrow">Visão geral</span><h1>Seu acervo, em ordem.</h1><p class="muted">Acompanhe o movimento do estoque de livros.</p></div><a class="button primary" href="gerenciar_de_produto.html">Cadastrar livro</a></div><div class="message" data-message></div><section class="stats"><article class="stat"><span>Total de títulos</span><strong data-total-livros>0</strong></article><article class="stat"><span>Itens em estoque</span><strong data-total-estoque>0</strong></article><article class="stat"><span>Valor do estoque</span><strong data-valor-estoque>R$ 0,00</strong></article><article class="stat"><span>Estoque baixo</span><strong data-estoque-baixo>0</strong></article></section></main></div><script src="../js/api.js"></script><script src="../js/auth.js"></script><script src="../js/app.js"></script><script>const authenticated=Boolean(localStorage.getItem('feestoque_token'));const dashboard=new URLSearchParams(location.search).has('dashboard');if(authenticated&&dashboard){document.querySelector('[data-login-view]').style.display='none';document.querySelector('[data-dashboard-view]').style.display='block';loadDashboard();}else{document.querySelector('[data-login-form]').addEventListener('submit',async event=>{event.preventDefault();try{const result=await apiRequest('/auth/login',{method:'POST',body:JSON.stringify(Object.fromEntries(new FormData(event.currentTarget)))});localStorage.setItem('feestoque_token',result.token);localStorage.setItem('feestoque_user',result.usuario);location.href='idex.html?dashboard=1';}catch(error){const message=document.querySelector('[data-login-view] [data-message]');message.textContent='Login ou senha inválidos.';message.className='message error';}});}</script></body></html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FE.ESTOQUE | Login</title>
+    <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+    <main class="login-page" data-login-view>
+        <section class="login-box">
+            <span class="eyebrow">Biblioteca de gestão</span>
+            <h1>FE.ESTOQUE</h1>
+            <p class="muted">Entre para organizar seu acervo e acompanhar o estoque.</p>
+            <div class="message" data-message></div>
+            <form data-login-form>
+                <div class="field">
+                    <label for="login">Login</label>
+                    <input id="login" name="login" required autocomplete="username">
+                </div>
+                <div class="field">
+                    <label for="senha">Senha</label>
+                    <input id="senha" name="senha" type="password" required autocomplete="current-password">
+                </div>
+                <button class="button primary" type="submit">Entrar</button>
+            </form>
+            <p class="hint">Perfil gerente: gerente / gerente123</p>
+        </section>
+    </main>
+
+    <div class="shell dashboard-view" data-dashboard-view>
+        <header class="topbar">
+            <a class="brand" href="idex.html?dashboard=1">FE.ESTOQUE</a>
+            <nav class="nav">
+                <a class="active" href="idex.html?dashboard=1">Dashboard</a>
+                <a href="pesquisar.html">Livros</a>
+                <a href="gerenciar_de_produto.html">Novo livro</a>
+                <button class="logout" data-logout>Sair</button>
+            </nav>
+        </header>
+        <main>
+            <div class="hero">
+                <div>
+                    <span class="eyebrow">Visão geral</span>
+                    <h1>Seu acervo, em ordem.</h1>
+                    <p class="muted">Acompanhe o movimento do estoque de livros.</p>
+                </div>
+                <a class="button primary" href="gerenciar_de_produto.html">Cadastrar livro</a>
+            </div>
+            <div class="message" data-message></div>
+            <section class="stats">
+                <article class="stat"><span>Total de títulos</span><strong data-total-livros>0</strong></article>
+                <article class="stat"><span>Itens em estoque</span><strong data-total-estoque>0</strong></article>
+                <article class="stat"><span>Valor do estoque</span><strong data-valor-estoque>R$ 0,00</strong></article>
+                <article class="stat"><span>Estoque baixo</span><strong data-estoque-baixo>0</strong></article>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/app.js"></script>
+    <script>
+        const authenticated = Boolean(localStorage.getItem('feestoque_token'));
+        const dashboard = new URLSearchParams(location.search).has('dashboard');
+        const loginView = document.querySelector('[data-login-view]');
+        const dashboardView = document.querySelector('[data-dashboard-view]');
+
+        if (authenticated && dashboard) {
+            loginView.style.display = 'none';
+            dashboardView.style.display = 'block';
+            loadDashboard();
+        } else {
+            document.querySelector('[data-login-form]').addEventListener('submit', async event => {
+                event.preventDefault();
+                const message = document.querySelector('[data-login-view] [data-message]');
+                message.className = 'message';
+                message.textContent = 'Conectando...';
+
+                try {
+                    const result = await apiRequest('/auth/login', {
+                        method: 'POST',
+                        body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget)))
+                    });
+                    localStorage.setItem('feestoque_token', result.token);
+                    localStorage.setItem('feestoque_user', result.usuario);
+                    location.href = 'idex.html?dashboard=1';
+                } catch (error) {
+                    message.textContent = error.message.includes('conectar')
+                        ? error.message
+                        : 'Login ou senha inválidos.';
+                    message.className = 'message error';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -14,7 +14,7 @@ var jwt = builder.Configuration.GetSection("Jwt");
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddCors(options => options.AddPolicy("Frontend", policy => policy
-    .SetIsOriginAllowed(origin => Uri.TryCreate(origin, UriKind.Absolute, out var uri) && (uri.Host == "localhost" || uri.Host == "127.0.0.1"))
+    .SetIsOriginAllowed(origin => origin == "null" || (Uri.TryCreate(origin, UriKind.Absolute, out var uri) && (uri.Host == "localhost" || uri.Host == "127.0.0.1")))
     .AllowAnyHeader().AllowAnyMethod()));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
@@ -37,14 +37,20 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+    var hasher = new PasswordHasher<AppUser>();
     if (!db.Users.Any())
     {
-        var hasher = new PasswordHasher<AppUser>();
         var user = new AppUser { Login = "admin" };
         user.SenhaHash = hasher.HashPassword(user, "admin123");
         db.Users.Add(user);
-        db.SaveChanges();
     }
+    if (!db.Users.Any(user => user.Login == "gerente"))
+    {
+        var profile = new AppUser { Login = "gerente" };
+        profile.SenhaHash = hasher.HashPassword(profile, "gerente123");
+        db.Users.Add(profile);
+    }
+    db.SaveChanges();
 }
 
 app.UseCors("Frontend");

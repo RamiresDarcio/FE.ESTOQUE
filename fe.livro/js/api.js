@@ -5,7 +5,12 @@ async function apiRequest(path, options = {}) {
     const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+    let response;
+    try {
+        response = await fetch(`${API_URL}${path}`, { ...options, headers });
+    } catch {
+        throw new Error('Não foi possível conectar à API. Inicie o backend na porta 5050.');
+    }
     if (response.status === 401) {
         localStorage.removeItem('feestoque_token');
         localStorage.removeItem('feestoque_user');
