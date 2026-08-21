@@ -8,7 +8,7 @@ async function loadReports() {
     const end = document.querySelector('[data-end]').value;
     const query = new URLSearchParams(); if (start) query.set('dataInicial', start); if (end) query.set('dataFinal', end);
     try {
-        const [summary, products] = await Promise.all([apiRequest(`/vendas/relatorios?${query}`), apiRequest('/vendas/relatorios/produtos-mais-vendidos')]);
+        const [summary, products] = await Promise.all([apiRequest(`/vendas/relatorios?${query}`), apiRequest(`/vendas/relatorios/produtos-mais-vendidos?${query}`)]);
         document.querySelector('[data-sales-count]').textContent = summary.quantidadeVendas;
         document.querySelector('[data-revenue]').textContent = reportMoney(summary.faturamento);
         document.querySelector('[data-discounts]').textContent = reportMoney(summary.descontos);
@@ -17,4 +17,10 @@ async function loadReports() {
     } catch (error) { reportMessage(error.message, 'error'); }
 }
 document.querySelector('[data-load]').addEventListener('click', loadReports);
+document.querySelector('[data-export]').addEventListener('click', () => {
+    const rows = [...document.querySelectorAll('[data-top-products] tr')].map(row => [...row.cells].map(cell => cell.textContent.trim()));
+    if (!rows.length || rows[0].length !== 3) { reportMessage('Não há dados para exportar.', 'error'); return; }
+    const csv = [['Produto', 'Quantidade', 'Faturamento'], ...rows].map(row => row.map(value => `"${value.replaceAll('"', '""')}"`).join(';')).join('\n');
+    const link = document.createElement('a'); link.href = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' })); link.download = 'relatorio-fe-estoque.csv'; link.click(); URL.revokeObjectURL(link.href);
+});
 loadReports();

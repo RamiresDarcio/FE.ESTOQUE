@@ -18,7 +18,12 @@ async function apiRequest(path, options = {}) {
     }
     if (!response.ok) {
         let message = 'Não foi possível concluir a operação.';
-        try { message = (await response.json()).mensagem || message; } catch { /* resposta sem JSON */ }
+        try {
+            const body = await response.json();
+            const validation = body.errors ? Object.values(body.errors).flat().join(' ') : '';
+            message = body.mensagem || body.detail || body.title || validation || message;
+        } catch { /* resposta sem JSON */ }
+        console.error(`API ${response.status} em ${path}: ${message}`);
         throw new Error(message);
     }
     return response.status === 204 ? null : response.json();

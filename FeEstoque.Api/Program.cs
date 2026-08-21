@@ -149,7 +149,13 @@ vendas.MapGet("/relatorios", async (DateTime? dataInicial, DateTime? dataFinal, 
     var quantidade = await db.ItensVenda.Where(item => vendaIds.Contains(item.VendaId)).SumAsync(item => (int?)item.Quantidade) ?? 0;
     return Results.Ok(new { quantidadeVendas = vendasPeriodo.Count, faturamento = vendasPeriodo.Sum(item => item.Total), descontos = vendasPeriodo.Sum(item => item.Desconto), ticketMedio = vendasPeriodo.Count == 0 ? 0 : vendasPeriodo.Average(item => item.Total), produtosVendidos = quantidade });
 });
-vendas.MapGet("/relatorios/produtos-mais-vendidos", async (AppDbContext db) => Results.Ok(await db.ItensVenda.AsNoTracking().Where(item => item.Venda.Status == "Pago").GroupBy(item => new { item.ProdutoId, item.Produto.Titulo }).Select(group => new { produtoId = group.Key.ProdutoId, produto = group.Key.Titulo, quantidade = group.Sum(item => item.Quantidade), faturamento = group.Sum(item => item.Subtotal) }).OrderByDescending(item => item.quantidade).Take(10).ToListAsync()));
+vendas.MapGet("/relatorios/produtos-mais-vendidos", async (DateTime? dataInicial, DateTime? dataFinal, AppDbContext db) =>
+{
+    var query = db.ItensVenda.AsNoTracking().Where(item => item.Venda.Status == "Pago");
+    if (dataInicial.HasValue) query = query.Where(item => item.Venda.DataVenda >= dataInicial.Value.Date);
+    if (dataFinal.HasValue) query = query.Where(item => item.Venda.DataVenda < dataFinal.Value.Date.AddDays(1));
+    return Results.Ok(await query.GroupBy(item => new { item.ProdutoId, item.Produto.Titulo }).Select(group => new { produtoId = group.Key.ProdutoId, produto = group.Key.Titulo, quantidade = group.Sum(item => item.Quantidade), faturamento = group.Sum(item => item.Subtotal) }).OrderByDescending(item => item.quantidade).Take(10).ToListAsync());
+});
 vendas.MapGet("/cliente/{clienteId:int}", async (int clienteId, AppDbContext db) => Results.Ok(await db.Vendas.AsNoTracking().Where(item => item.ClienteId == clienteId).OrderByDescending(item => item.DataVenda).ToListAsync()));
 vendas.MapGet("/{id:int}", async (int id, AppDbContext db) => await db.Vendas.AsNoTracking().Include(item => item.Cliente).Include(item => item.Itens).ThenInclude(item => item.Produto).SingleOrDefaultAsync(item => item.Id == id) is { } sale ? Results.Ok(sale) : Results.NotFound(new { mensagem = "Venda não encontrada." }));
 vendas.MapGet("/{id:int}/itens", async (int id, AppDbContext db) => Results.Ok(await db.ItensVenda.AsNoTracking().Include(item => item.Produto).Where(item => item.VendaId == id).ToListAsync()));
