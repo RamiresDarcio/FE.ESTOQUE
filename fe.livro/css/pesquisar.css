@@ -1,0 +1,112 @@
+*{
+    box-sizing: border-box;
+}
+body{
+    margin: 0;
+    background-color: #FF922B;
+    font-family: 'Times New Roman', Times, serif;
+    min-height: 100vh;
+}
+
+.pequisar{
+    width: 100%;
+    padding:  8px;
+}
+.pequisar > section:first-child{
+    width: 100%;
+    height: 275px;
+    background-color: #f2f2f2;
+    padding: 40px 50px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(3,1fr);
+    gap: 5px 80px;
+}
+.pequisar >section:first-child div{
+    font-size: 38px;
+    display: flex;
+    align-items: center;
+}
+.pequisar > section:first-child .titulo{
+    grid-column: 1;
+    grid-row: 1;
+}
+.pequisar > section:first-child .genero{
+    grid-column: 2;
+    grid-row: 1;
+}
+.informacoes-produtos {
+    margin-top: 8px;
+    width: 100%;
+}
+
+/* organiza esquerda e direita */
+
+.produtos-esquerdo {
+    width: 100%;
+    height: 275px;
+
+    display: grid;
+    grid-template-columns: 35% 65%;
+    background-color: #f2f2f2;
+}
+
+/* =========================
+   IMAGEM
+   ========================= */
+
+.produtos-esquerdo > div:first-child {
+    width: 100%;
+    height: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#imagem_produtor {
+    width: 180px;
+    height: 175px;
+
+    background-color: #d3d3d3;
+    object-fit: contain;
+}
+
+/* =========================
+   DETALHES
+   ========================= */
+
+.detalha_produtos {
+    padding: 30px;
+}
+
+.detalha_produtos p {
+    margin: 0 0 12px 0;
+    font-size: 32px;
+}
+
+/* =========================
+   LADO DIREITO
+   ========================= */
+
+.produtos_direito {
+    position: absolute;
+
+    right: 8px;
+    margin-top: 0;
+
+    width: 64.5%;
+    height: 275px;
+
+    background-color: #f2f2f2;
+
+    padding: 30px 60px;
+}
+
+/* preço e código */
+
+.preco p,
+.codigo p {
+    font-size: 32px;
+    margin: 0 0 15px 0;
+}
