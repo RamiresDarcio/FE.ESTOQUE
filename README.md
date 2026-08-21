@@ -144,6 +144,10 @@ A API fica disponível em `http://localhost:5050`. Os endpoints protegidos exige
 - [x] Integração Front-end + Back-end
 - [x] Sistema de login com JWT e hash de senha
 - [x] CRUD, pesquisa, dashboard e controle de estoque
+- [x] Cadastro, consulta, edição e exclusão de clientes
+- [x] Histórico com confirmação de pagamentos pendentes
+- [x] Relatórios de vendas e produtos mais vendidos
+- [x] Ajuste rápido de estoque na tela de detalhes
 - [x] Documentação de execução
 - [ ] Versão final
 

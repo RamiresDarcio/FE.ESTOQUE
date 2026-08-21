@@ -105,11 +105,27 @@ clientes.MapGet("", async (string? busca, AppDbContext db) =>
     if (!string.IsNullOrWhiteSpace(busca)) query = query.Where(item => item.Nome.ToLower().Contains(busca.Trim().ToLower()) || (item.Cpf != null && item.Cpf.Contains(busca.Trim())));
     return Results.Ok(await query.OrderBy(item => item.Nome).ToListAsync());
 });
+clientes.MapGet("/{id:int}", async (int id, AppDbContext db) => await db.Clientes.FindAsync(id) is { } cliente ? Results.Ok(cliente) : Results.NotFound(new { mensagem = "Cliente não encontrado." }));
 clientes.MapPost("", async (ClienteRequest request, AppDbContext db) =>
 {
     if (string.IsNullOrWhiteSpace(request.Nome)) return Results.BadRequest(new { mensagem = "O nome do cliente é obrigatório." });
     var cliente = new Cliente { Nome = request.Nome.Trim(), Cpf = request.Cpf?.Trim(), Email = request.Email?.Trim(), Telefone = request.Telefone?.Trim(), Endereco = request.Endereco?.Trim() };
     db.Clientes.Add(cliente); await db.SaveChangesAsync(); return Results.Created($"/api/clientes/{cliente.Id}", cliente);
+});
+clientes.MapPut("/{id:int}", async (int id, ClienteRequest request, AppDbContext db) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Nome)) return Results.BadRequest(new { mensagem = "O nome do cliente é obrigatório." });
+    var cliente = await db.Clientes.FindAsync(id);
+    if (cliente is null) return Results.NotFound(new { mensagem = "Cliente não encontrado." });
+    cliente.Nome = request.Nome.Trim(); cliente.Cpf = request.Cpf?.Trim(); cliente.Email = request.Email?.Trim(); cliente.Telefone = request.Telefone?.Trim(); cliente.Endereco = request.Endereco?.Trim();
+    await db.SaveChangesAsync(); return Results.Ok(cliente);
+});
+clientes.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
+{
+    var cliente = await db.Clientes.FindAsync(id);
+    if (cliente is null) return Results.NotFound(new { mensagem = "Cliente não encontrado." });
+    if (await db.Vendas.AnyAsync(item => item.ClienteId == id)) return Results.BadRequest(new { mensagem = "Não é possível excluir um cliente com vendas vinculadas." });
+    db.Clientes.Remove(cliente); await db.SaveChangesAsync(); return Results.NoContent();
 });
 
 var vendas = app.MapGroup("/api/vendas").RequireAuthorization();
@@ -176,7 +192,14 @@ vendas.MapPut("/{id:int}/cancelar", async (int id, AppDbContext db) =>
     if (sale is null) return Results.NotFound(new { mensagem = "Venda não encontrada." });
     if (sale.Status == "Cancelado") return Results.BadRequest(new { mensagem = "A venda já está cancelada." });
     foreach (var item in sale.Itens) { var product = await db.Livros.FindAsync(item.ProdutoId); if (product is not null) product.Quantidade += item.Quantidade; }
-    sale.Status = "Cancelado"; await db.SaveChangesAsync(); await transaction.CommitAsync(); return Results.Ok(sale);
+    sale.Status = "Cancelado"; await db.SaveChangesAsync(); await transaction.CommitAsync(); return Results.Ok(new { sale.Id, sale.Status });
+});
+vendas.MapPut("/{id:int}/pagar", async (int id, AppDbContext db) =>
+{
+    var sale = await db.Vendas.FindAsync(id);
+    if (sale is null) return Results.NotFound(new { mensagem = "Venda não encontrada." });
+    if (sale.Status == "Cancelado") return Results.BadRequest(new { mensagem = "Uma venda cancelada não pode ser paga." });
+    sale.Status = "Pago"; await db.SaveChangesAsync(); return Results.Ok(new { sale.Id, sale.Status });
 });
 
 app.MapGet("/api/dashboard", async (AppDbContext db) =>
