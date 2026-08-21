@@ -17,6 +17,10 @@ async function loadDashboard() {
         document.querySelector('[data-total-estoque]').textContent = data.totalEstoque;
         document.querySelector('[data-valor-estoque]').textContent = money(data.valorEstoque);
         document.querySelector('[data-estoque-baixo]').textContent = data.estoqueBaixo;
+        document.querySelector('[data-vendas-hoje]')?.replaceChildren(String(data.vendasHoje));
+        document.querySelector('[data-faturamento-hoje]')?.replaceChildren(money(data.faturamentoHoje));
+        document.querySelector('[data-faturamento-mes]')?.replaceChildren(money(data.faturamentoMes));
+        document.querySelector('[data-ticket-medio]')?.replaceChildren(money(data.ticketMedio));
     } catch (error) { showMessage(error.message, 'error'); }
 }
 

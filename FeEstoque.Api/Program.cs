@@ -98,7 +98,94 @@ livros.MapPut("/{id:int}", async (int id, LivroRequest request, AppDbContext db)
 livros.MapDelete("/{id:int}", async (int id, AppDbContext db) => { var book = await db.Livros.FindAsync(id); if (book is null) return Results.NotFound(new { mensagem = "Livro não encontrado." }); db.Livros.Remove(book); await db.SaveChangesAsync(); return Results.NoContent(); });
 livros.MapPatch("/{id:int}/estoque", async (int id, EstoqueRequest request, AppDbContext db) => { if (request.Quantidade < 0) return Results.BadRequest(new { mensagem = "A quantidade não pode ser negativa." }); var book = await db.Livros.FindAsync(id); if (book is null) return Results.NotFound(new { mensagem = "Livro não encontrado." }); book.Quantidade = request.Quantidade; await db.SaveChangesAsync(); return Results.Ok(book); });
 
-app.MapGet("/api/dashboard", async (AppDbContext db) => Results.Ok(new { totalLivros = await db.Livros.CountAsync(), totalEstoque = await db.Livros.SumAsync(book => (int?)book.Quantidade) ?? 0, valorEstoque = await db.Livros.SumAsync(book => (decimal?)(book.Preco * book.Quantidade)) ?? 0, estoqueBaixo = await db.Livros.CountAsync(book => book.Quantidade <= 3) })).RequireAuthorization();
+var clientes = app.MapGroup("/api/clientes").RequireAuthorization();
+clientes.MapGet("", async (string? busca, AppDbContext db) =>
+{
+    var query = db.Clientes.AsNoTracking();
+    if (!string.IsNullOrWhiteSpace(busca)) query = query.Where(item => item.Nome.ToLower().Contains(busca.Trim().ToLower()) || (item.Cpf != null && item.Cpf.Contains(busca.Trim())));
+    return Results.Ok(await query.OrderBy(item => item.Nome).ToListAsync());
+});
+clientes.MapPost("", async (ClienteRequest request, AppDbContext db) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Nome)) return Results.BadRequest(new { mensagem = "O nome do cliente é obrigatório." });
+    var cliente = new Cliente { Nome = request.Nome.Trim(), Cpf = request.Cpf?.Trim(), Email = request.Email?.Trim(), Telefone = request.Telefone?.Trim(), Endereco = request.Endereco?.Trim() };
+    db.Clientes.Add(cliente); await db.SaveChangesAsync(); return Results.Created($"/api/clientes/{cliente.Id}", cliente);
+});
+
+var vendas = app.MapGroup("/api/vendas").RequireAuthorization();
+vendas.MapGet("", async (DateTime? dataInicial, DateTime? dataFinal, int? clienteId, string? formaPagamento, string? status, AppDbContext db) =>
+{
+    var query = db.Vendas.AsNoTracking().Include(item => item.Cliente).AsQueryable();
+    if (dataInicial.HasValue) query = query.Where(item => item.DataVenda >= dataInicial.Value.Date);
+    if (dataFinal.HasValue) query = query.Where(item => item.DataVenda < dataFinal.Value.Date.AddDays(1));
+    if (clienteId.HasValue) query = query.Where(item => item.ClienteId == clienteId);
+    if (!string.IsNullOrWhiteSpace(formaPagamento)) query = query.Where(item => item.FormaPagamento == formaPagamento);
+    if (!string.IsNullOrWhiteSpace(status)) query = query.Where(item => item.Status == status);
+    return Results.Ok(await query.OrderByDescending(item => item.DataVenda).Select(item => new { item.Id, item.DataVenda, cliente = item.Cliente == null ? "Não identificado" : item.Cliente.Nome, item.Subtotal, item.Desconto, item.Total, item.FormaPagamento, item.Status }).ToListAsync());
+});
+vendas.MapGet("/relatorios", async (DateTime? dataInicial, DateTime? dataFinal, AppDbContext db) =>
+{
+    var query = db.Vendas.AsNoTracking().Where(item => item.Status != "Cancelado");
+    if (dataInicial.HasValue) query = query.Where(item => item.DataVenda >= dataInicial.Value.Date);
+    if (dataFinal.HasValue) query = query.Where(item => item.DataVenda < dataFinal.Value.Date.AddDays(1));
+    var vendasPeriodo = await query.ToListAsync();
+    var vendaIds = vendasPeriodo.Select(item => item.Id).ToList();
+    var quantidade = await db.ItensVenda.Where(item => vendaIds.Contains(item.VendaId)).SumAsync(item => (int?)item.Quantidade) ?? 0;
+    return Results.Ok(new { quantidadeVendas = vendasPeriodo.Count, faturamento = vendasPeriodo.Sum(item => item.Total), descontos = vendasPeriodo.Sum(item => item.Desconto), ticketMedio = vendasPeriodo.Count == 0 ? 0 : vendasPeriodo.Average(item => item.Total), produtosVendidos = quantidade });
+});
+vendas.MapGet("/relatorios/produtos-mais-vendidos", async (AppDbContext db) => Results.Ok(await db.ItensVenda.AsNoTracking().Where(item => item.Venda.Status == "Pago").GroupBy(item => new { item.ProdutoId, item.Produto.Titulo }).Select(group => new { produtoId = group.Key.ProdutoId, produto = group.Key.Titulo, quantidade = group.Sum(item => item.Quantidade), faturamento = group.Sum(item => item.Subtotal) }).OrderByDescending(item => item.quantidade).Take(10).ToListAsync()));
+vendas.MapGet("/cliente/{clienteId:int}", async (int clienteId, AppDbContext db) => Results.Ok(await db.Vendas.AsNoTracking().Where(item => item.ClienteId == clienteId).OrderByDescending(item => item.DataVenda).ToListAsync()));
+vendas.MapGet("/{id:int}", async (int id, AppDbContext db) => await db.Vendas.AsNoTracking().Include(item => item.Cliente).Include(item => item.Itens).ThenInclude(item => item.Produto).SingleOrDefaultAsync(item => item.Id == id) is { } sale ? Results.Ok(sale) : Results.NotFound(new { mensagem = "Venda não encontrada." }));
+vendas.MapGet("/{id:int}/itens", async (int id, AppDbContext db) => Results.Ok(await db.ItensVenda.AsNoTracking().Include(item => item.Produto).Where(item => item.VendaId == id).ToListAsync()));
+vendas.MapPost("", async (VendaRequest request, AppDbContext db) =>
+{
+    var formas = new[] { "Dinheiro", "PIX", "Cartão de Débito", "Cartão de Crédito" };
+    if (request.Itens is null || request.Itens.Count == 0) return Results.BadRequest(new { mensagem = "Adicione pelo menos um produto ao carrinho." });
+    if (!formas.Contains(request.FormaPagamento)) return Results.BadRequest(new { mensagem = "Forma de pagamento inválida." });
+    if (request.ClienteId.HasValue && await db.Clientes.FindAsync(request.ClienteId.Value) is null) return Results.BadRequest(new { mensagem = "Cliente não encontrado." });
+    if (request.Desconto < 0 || (request.TipoDesconto == "percentual" && request.Desconto > 100)) return Results.BadRequest(new { mensagem = "Desconto inválido." });
+    if (request.Itens.Any(item => item.Quantidade <= 0)) return Results.BadRequest(new { mensagem = "As quantidades devem ser maiores que zero." });
+
+    await using var transaction = await db.Database.BeginTransactionAsync();
+    try
+    {
+        var requestedItems = request.Itens.GroupBy(item => item.ProdutoId).Select(group => new VendaItemRequest(group.Key, group.Sum(item => item.Quantidade))).ToList();
+        var products = await db.Livros.Where(item => requestedItems.Select(requested => requested.ProdutoId).Contains(item.Id)).ToDictionaryAsync(item => item.Id);
+        if (products.Count != requestedItems.Count) return Results.BadRequest(new { mensagem = "Um ou mais produtos não foram encontrados." });
+        var sale = new Venda { ClienteId = request.ClienteId, FormaPagamento = request.FormaPagamento, Status = request.FormaPagamento == "Dinheiro" ? "Pago" : "Pendente" };
+        foreach (var requested in requestedItems)
+        {
+            var product = products[requested.ProdutoId];
+            if (requested.Quantidade > product.Quantidade) return Results.BadRequest(new { mensagem = $"Estoque insuficiente para {product.Titulo}. Disponível: {product.Quantidade}." });
+            var item = new ItemVenda { ProdutoId = product.Id, Quantidade = requested.Quantidade, PrecoUnitario = product.Preco, Subtotal = product.Preco * requested.Quantidade };
+            sale.Itens.Add(item); sale.Subtotal += item.Subtotal; product.Quantidade -= requested.Quantidade;
+        }
+        sale.Desconto = request.TipoDesconto == "percentual" ? Math.Round(sale.Subtotal * request.Desconto / 100, 2) : request.Desconto;
+        if (sale.Desconto > sale.Subtotal) return Results.BadRequest(new { mensagem = "O desconto não pode ser maior que o subtotal." });
+        sale.Total = sale.Subtotal - sale.Desconto;
+        if (request.FormaPagamento == "Dinheiro" && (!request.ValorRecebido.HasValue || request.ValorRecebido.Value < sale.Total)) return Results.BadRequest(new { mensagem = $"Valor recebido insuficiente. Total: {sale.Total:C}." });
+        db.Vendas.Add(sale); await db.SaveChangesAsync(); await transaction.CommitAsync();
+        return Results.Created($"/api/vendas/{sale.Id}", new VendaCreatedResponse(sale.Id, sale.ClienteId, sale.DataVenda, sale.Subtotal, sale.Desconto, sale.Total, sale.FormaPagamento, sale.Status, request.FormaPagamento == "Dinheiro" ? request.ValorRecebido!.Value - sale.Total : 0));
+    }
+    catch { await transaction.RollbackAsync(); return Results.Problem("Não foi possível concluir a venda.", statusCode: 500); }
+});
+vendas.MapPut("/{id:int}/cancelar", async (int id, AppDbContext db) =>
+{
+    await using var transaction = await db.Database.BeginTransactionAsync();
+    var sale = await db.Vendas.Include(item => item.Itens).SingleOrDefaultAsync(item => item.Id == id);
+    if (sale is null) return Results.NotFound(new { mensagem = "Venda não encontrada." });
+    if (sale.Status == "Cancelado") return Results.BadRequest(new { mensagem = "A venda já está cancelada." });
+    foreach (var item in sale.Itens) { var product = await db.Livros.FindAsync(item.ProdutoId); if (product is not null) product.Quantidade += item.Quantidade; }
+    sale.Status = "Cancelado"; await db.SaveChangesAsync(); await transaction.CommitAsync(); return Results.Ok(sale);
+});
+
+app.MapGet("/api/dashboard", async (AppDbContext db) =>
+{
+    var today = DateTime.UtcNow.Date; var month = new DateTime(today.Year, today.Month, 1);
+    var sales = db.Vendas.AsNoTracking().Where(item => item.Status == "Pago");
+    var todaySales = await sales.Where(item => item.DataVenda >= today).ToListAsync(); var monthSales = await sales.Where(item => item.DataVenda >= month).ToListAsync();
+    return Results.Ok(new { totalLivros = await db.Livros.CountAsync(), totalEstoque = await db.Livros.SumAsync(book => (int?)book.Quantidade) ?? 0, valorEstoque = await db.Livros.SumAsync(book => (decimal?)(book.Preco * book.Quantidade)) ?? 0, estoqueBaixo = await db.Livros.CountAsync(book => book.Quantidade <= 3), vendasHoje = todaySales.Count, vendasMes = monthSales.Count, faturamentoHoje = todaySales.Sum(item => item.Total), faturamentoMes = monthSales.Sum(item => item.Total), ticketMedio = monthSales.Count == 0 ? 0 : monthSales.Average(item => item.Total) });
+}).RequireAuthorization();
 
 app.Run();
 
