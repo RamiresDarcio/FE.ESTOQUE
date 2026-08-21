@@ -1,0 +1,172 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: #FF922B;
+    font-family: 'Times New Roman', Times, serif;
+    min-height: 100vh;
+}
+
+/* Área principal */
+.cadastro-produto {
+    width: 90%;
+    max-width: 1400px;
+    margin: 50px auto;
+}
+
+/* Título */
+.cadastro-produto::before {
+    content: "Gerenciar do produto";
+    display: block;
+    font-size: 36px;
+    font-weight: bold;
+    margin-bottom: 35px;
+}
+
+/* Caixa principal */
+.dados-p {
+    position: relative;
+    width: 100%;
+    min-height: 700px;
+    background-color: #d3d3d3;
+    padding: 45px;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+/* Campos */
+.campo,
+.campo_menor,
+.campo-menor,
+.cadastro_resumo_campo {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Labels */
+.campo label,
+.campo_menor label,
+.campo-menor label,
+.cadastro_resumo_campo label {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+/* Inputs */
+.campo input,
+.campo_menor input,
+.campo-menor input,
+.cadastro_resumo_campo textarea {
+    border: none;
+    outline: none;
+    background-color: #ffffff;
+    padding: 12px 15px;
+    font-size: 17px;
+    border-radius: 5px;
+    font-family: 'Times New Roman', Times, serif;
+}
+/* Campos grandes */
+.campo input {
+    width: 100%;
+    height: 45px;
+}
+/* Campos menores */
+.campo_menor input,
+.campo-menor input {
+    width: 250px;
+    height: 45px;
+}
+/* Resumo */
+.cadastro_resumo_campo textarea {
+    width: 100%;
+    height: 200px;
+    resize: none;
+}
+/* Quando clicar nos campos */
+.campo input:focus,
+.campo_menor input:focus,
+.campo-menor input:focus,
+.cadastro_resumo_campo textarea:focus {
+   outline: 2px solid #FF6600;
+}
+/* Área da imagem */
+.imagem_p {
+    grid-column: 2;
+    /*
+       Começa na primeira linha
+       e ocupa várias linhas
+    */
+    grid-row: 1 / span 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+/* Caixa onde aparece a imagem */
+.area-imagem {
+    width: 420px;
+    height: 500px;
+    background-color: #eeeeee;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Imagem */
+.area-imagem img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Selecionar imagem */
+#imagem {
+    margin-top: 20px;
+    font-size: 16px;
+}
+
+/* Botões */
+.acao {
+    grid-column: 2;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+/* Estilo geral dos botões */
+.acao button {
+    width: 160px;
+    height: 50px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+/* Cadastrar */
+.btn_cadastra {
+    background-color: #ffffff;
+    color: #000000;
+}
+.btn_cadastra:hover {
+    background-color: #dddddd;
+}
+
+/* Cancelar */
+.btn_cancelar {
+    background-color: #d00000;
+    color: white;
+}
+
+/* Hover do cancelar */
+.btn_cancelar:hover {
+    background-color: #a00000;
+}
