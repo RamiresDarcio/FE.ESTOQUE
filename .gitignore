@@ -1,0 +1,6 @@
+**/bin/
+**/obj/
+FeEstoque.Api/feestoque.db
+FeEstoque.Api/feestoque.db-shm
+FeEstoque.Api/feestoque.db-wal
+.vs/

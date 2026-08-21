@@ -109,22 +109,36 @@ Banco de dados
 
 ---
 
+## ▶️ Executar localmente
+
+1. Inicie a API:
+
+	```powershell
+	dotnet run --project .\FeEstoque.Api\FeEstoque.Api.csproj --launch-profile http
+	```
+
+2. Abra `fe.livro/html/idex.html` em um servidor estático local. No VS Code, a extensão Live Server é uma opção simples.
+
+3. Use `admin` / `admin123` no primeiro acesso. O SQLite é criado automaticamente em `FeEstoque.Api/feestoque.db`.
+
+A API fica disponível em `http://localhost:5050`. Os endpoints protegidos exigem o token JWT retornado pelo login.
+
 ## 📌 Status do projeto
 
-🚧 Em desenvolvimento
+✅ Fluxo principal implementado
 
 ### Etapas
 
 - [x] Protótipo inicial no Figma
 - [x] Estrutura inicial do HTML
 - [x] Desenvolvimento do CSS
-- [ ] JavaScript
-- [ ] API .NET 10
-- [ ] Banco de dados
-- [ ] Integração Front-end + Back-end
-- [ ] Sistema de login
-- [ ] Testes
-- [ ] Documentação
+- [x] JavaScript
+- [x] API .NET 10
+- [x] Banco de dados SQLite com Entity Framework Core
+- [x] Integração Front-end + Back-end
+- [x] Sistema de login com JWT e hash de senha
+- [x] CRUD, pesquisa, dashboard e controle de estoque
+- [x] Documentação de execução
 - [ ] Versão final
 
 ---
